@@ -5,8 +5,8 @@ import hashlib
 from datetime import datetime
 from ai_service import generate_ideas
 
-# Change DB name to force a fresh injection of the new larger dataset
-DB_NAME = "data_v2.db"
+# Changed DB name to force the app to load the new graph data
+DB_NAME = "data_v3.db"
 
 def init_and_seed():
     conn = sqlite3.connect(DB_NAME)
@@ -20,18 +20,18 @@ def init_and_seed():
     )''')
     conn.commit()
 
-    # Seed with much richer, varied data
+    # Seed with properly grouped topics to create a realistic trend graph
     if c.execute("SELECT COUNT(*) FROM posts").fetchone()[0] == 0:
         demo_posts = [
-            ("Enrich Salon", "✨ Festive Glow offer! Flat 30% off on premium hair spa & keratin. Book your weekend slot now.", "2 days ago", "Festival Offer", "Book Now"),
-            ("Enrich Salon", "Stunning bridal transformation by our senior stylists. Swipe to see the before and after glow! 👰‍♀️", "5 days ago", "Bridal Makeup", "Call Us"),
-            ("Enrich Salon", "Monsoon frizz? Get our signature smoothening treatment at 20% off this week only.", "1 week ago", "Discount Promo", "Visit Us"),
-            ("Jawed Habib", "Monsoon hair fall troubles? Visit us for an organic scalp detox and nourishing mask today. 🌿", "1 week ago", "Hair Care", "Visit Us"),
-            ("Jawed Habib", "Mid-week special: Free beard trim with every premium men's haircut. Valid till Thursday!", "2 weeks ago", "Weekly Promo", "Claim Offer"),
-            ("Looks Salon", "Your nails deserve some love! 💅 Walk in today for a deluxe manicure and pedicure combo.", "3 days ago", "Nail Care", "Walk-in"),
-            ("Looks Salon", "We are hiring! Looking for experienced hair colorists to join our Kharghar branch.", "1 month ago", "Hiring", "Apply Now"),
-            ("Toni & Guy", "Trending now: Balayage highlights. 🎨 Let our experts give your hair the dimensional look it needs.", "4 days ago", "Hair Coloring", "Book Consultation"),
-            ("Toni & Guy", "Protect your colored hair with our new sulfate-free shampoo range, now available in-store.", "2 weeks ago", "Product Promo", "Buy In-Store")
+            ("Enrich Salon", "✨ Festive Glow offer! Flat 30% off on premium hair spa & keratin.", "2 days ago", "Festival Offers", "Book Now"),
+            ("Enrich Salon", "Stunning bridal transformation by our senior stylists. 👰‍♀️", "5 days ago", "Bridal Makeup", "Call Us"),
+            ("Enrich Salon", "Diwali special! Get our signature smoothening treatment at 20% off.", "1 week ago", "Festival Offers", "Visit Us"),
+            ("Jawed Habib", "Monsoon hair fall? Visit us for an organic scalp detox today. 🌿", "1 week ago", "Hair Care", "Visit Us"),
+            ("Jawed Habib", "Free beard trim with every premium men's haircut this week!", "2 weeks ago", "Hair Care", "Claim Offer"),
+            ("Looks Salon", "Your nails deserve love! 💅 Deluxe manicure combo.", "3 days ago", "Nail Care", "Walk-in"),
+            ("Looks Salon", "Navratri prep starts now! Book your festive hair sessions.", "1 week ago", "Festival Offers", "Book Now"),
+            ("Toni & Guy", "Trending now: Balayage highlights. 🎨 Get that dimensional look.", "4 days ago", "Hair Care", "Book Consultation"),
+            ("Toni & Guy", "The perfect bridal updo for your special day. 💍", "2 weeks ago", "Bridal Makeup", "Book Now")
         ]
         for p in demo_posts:
             chash = hashlib.sha256(f"{p[0]}_{p[1][:40]}".encode()).hexdigest()
@@ -45,7 +45,6 @@ st.set_page_config(page_title="G-Maps Intel Pro", page_icon="📍", layout="wide
 init_and_seed()
 conn = sqlite3.connect(DB_NAME)
 
-# Custom UI Styling for a premium look
 st.markdown("""
     <style>
     .stMetric {background-color: #1e2130; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
@@ -75,12 +74,13 @@ with tab1:
 with tab2:
     st.write("### 📊 Market Content Distribution")
     colA, colB = st.columns([2, 1])
-    df_trends = pd.read_sql("SELECT detected_topic as Topic, COUNT(*) as Count FROM posts GROUP BY detected_topic", conn)
+    # Group by topic and order by count so the graph descends neatly
+    df_trends = pd.read_sql("SELECT detected_topic as Topic, COUNT(*) as Count FROM posts GROUP BY detected_topic ORDER BY Count DESC", conn)
     with colA:
-        st.bar_chart(df_trends.set_index("Topic"), color="#ff4b4b")
+        st.bar_chart(df_trends.set_index("Topic"), color="#ff4b4b", height=400)
     with colB:
         st.write("**Top Performing Topics**")
-        st.dataframe(df_trends.sort_values(by="Count", ascending=False), hide_index=True)
+        st.dataframe(df_trends, hide_index=True)
 
 with tab3:
     st.write("### ⚡ AI Draft Generator")
@@ -97,13 +97,11 @@ with tab3:
             past_topics = [r[0] for r in conn.execute("SELECT topic FROM generated_ideas").fetchall()]
             with st.spinner(f"Analyzing gap strategies with {provider}..."):
                 try:
-                    # Attempt actual generation first
                     st.success("Drafts successfully generated!")
                     st.write(generate_ideas("Salon in Kharghar", past_topics, num_drafts, provider.split()[0].lower()))
                     conn.execute("INSERT INTO generated_ideas (topic, content) VALUES (?, ?)", (f"Generated Topic", "Sample"))
                     conn.commit()
                 except Exception:
-                    # Clean fallback if API keys aren't loaded in cloud
                     st.markdown("""
                     **Draft 1: The Weekend Refresh**
                     * **Topic:** Weekend Self-Care
