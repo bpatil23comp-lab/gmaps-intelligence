@@ -5,8 +5,8 @@ import hashlib
 from datetime import datetime
 from ai_service import generate_ideas
 
-# Changed DB name to force the app to load the new graph data
-DB_NAME = "data_v3.db"
+# Changed DB name to force the app to load the new Quick Commerce data
+DB_NAME = "data_qcomm.db"
 
 def init_and_seed():
     conn = sqlite3.connect(DB_NAME)
@@ -20,18 +20,18 @@ def init_and_seed():
     )''')
     conn.commit()
 
-    # Seed with properly grouped topics to create a realistic trend graph
+    # Seed with Quick Commerce Dark Store data
     if c.execute("SELECT COUNT(*) FROM posts").fetchone()[0] == 0:
         demo_posts = [
-            ("Enrich Salon", "✨ Festive Glow offer! Flat 30% off on premium hair spa & keratin.", "2 days ago", "Festival Offers", "Book Now"),
-            ("Enrich Salon", "Stunning bridal transformation by our senior stylists. 👰‍♀️", "5 days ago", "Bridal Makeup", "Call Us"),
-            ("Enrich Salon", "Diwali special! Get our signature smoothening treatment at 20% off.", "1 week ago", "Festival Offers", "Visit Us"),
-            ("Jawed Habib", "Monsoon hair fall? Visit us for an organic scalp detox today. 🌿", "1 week ago", "Hair Care", "Visit Us"),
-            ("Jawed Habib", "Free beard trim with every premium men's haircut this week!", "2 weeks ago", "Hair Care", "Claim Offer"),
-            ("Looks Salon", "Your nails deserve love! 💅 Deluxe manicure combo.", "3 days ago", "Nail Care", "Walk-in"),
-            ("Looks Salon", "Navratri prep starts now! Book your festive hair sessions.", "1 week ago", "Festival Offers", "Book Now"),
-            ("Toni & Guy", "Trending now: Balayage highlights. 🎨 Get that dimensional look.", "4 days ago", "Hair Care", "Book Consultation"),
-            ("Toni & Guy", "The perfect bridal updo for your special day. 💍", "2 weeks ago", "Bridal Makeup", "Book Now")
+            ("Zepto Dark Store", "Craving midnight snacks? 🍿 Get chips, cold drinks, and chocolates delivered in 10 minutes flat.", "2 days ago", "Late Night Delivery", "Order Now"),
+            ("Zepto Dark Store", "Fresh Alphonso mangoes just arrived! 🥭 Stock is limited, get them before they sell out.", "5 days ago", "Fresh Produce", "Order Now"),
+            ("Zepto Dark Store", "Rain pouring down? Stay inside. 🌧️ Hot tea ingredients and pakoda mix at your doorstep.", "1 week ago", "Weather Promos", "Order Now"),
+            ("Blinkit Delivery Hub", "Forgot the charger? We now deliver Apple and Samsung original accessories in 10 minutes. 🔌", "1 week ago", "Electronics", "Buy Now"),
+            ("Blinkit Delivery Hub", "Navratri fasting essentials are here! Sabudana, kuttu atta, and fresh fruits delivered instantly.", "2 weeks ago", "Festival Essentials", "Order Now"),
+            ("Blinkit Delivery Hub", "Hosting a house party? 🥳 Ice, mixers, and disposable glasses delivered before your guests arrive.", "3 days ago", "Late Night Delivery", "Order Now"),
+            ("Swiggy Instamart Pod", "Need printouts urgently? Upload your documents and get them printed and delivered in minutes! 📄", "3 days ago", "Service Expansion", "Try Now"),
+            ("Swiggy Instamart Pod", "Freshly baked bread and local bakery items added to our morning inventory. 🥐", "1 week ago", "Breakfast Items", "Order Now"),
+            ("BigBasket Now Hub", "Stock up for the month. Flat 15% off on all 5kg rice and atta bags today. 🌾", "4 days ago", "Bulk Groceries", "Claim Offer")
         ]
         for p in demo_posts:
             chash = hashlib.sha256(f"{p[0]}_{p[1][:40]}".encode()).hexdigest()
@@ -41,7 +41,7 @@ def init_and_seed():
         conn.commit()
     conn.close()
 
-st.set_page_config(page_title="G-Maps Intel Pro", page_icon="📍", layout="wide")
+st.set_page_config(page_title="Quick Commerce Intel", page_icon="⚡", layout="wide")
 init_and_seed()
 conn = sqlite3.connect(DB_NAME)
 
@@ -51,8 +51,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("📍 Google Maps Competitor Intelligence")
-st.markdown("Monitor competitor updates, analyze content trends, and generate AI-powered strategies.")
+st.title("⚡ Quick Commerce Competitor Intelligence")
+st.markdown("Monitor dark store updates, analyze hyper-local trends, and generate AI-powered strategies.")
 st.divider()
 
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Data", "📈 Trend Analytics", "🤖 AI Content Generator"])
@@ -63,21 +63,20 @@ with tab1:
     total_comps = conn.execute("SELECT COUNT(DISTINCT competitor_name) FROM posts").fetchone()[0]
     
     col1.metric("Total Posts Scraped", total_posts, "Live Database")
-    col2.metric("Tracked Competitors", total_comps, "Active")
+    col2.metric("Tracked Dark Stores", total_comps, "Active")
     col3.metric("Data Health", "100%", "No Duplicates")
     col4.metric("Last Scrape Run", "Just now", "Auto-synced")
     
     st.write("### 🗃️ Competitor Repository")
-    df = pd.read_sql("SELECT competitor_name as Competitor, post_date as Date, detected_topic as Topic, detected_cta as CTA, post_text as Content FROM posts ORDER BY id DESC", conn)
+    df = pd.read_sql("SELECT competitor_name as Dark_Store, post_date as Date, detected_topic as Topic, detected_cta as CTA, post_text as Content FROM posts ORDER BY id DESC", conn)
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 with tab2:
     st.write("### 📊 Market Content Distribution")
     colA, colB = st.columns([2, 1])
-    # Group by topic and order by count so the graph descends neatly
     df_trends = pd.read_sql("SELECT detected_topic as Topic, COUNT(*) as Count FROM posts GROUP BY detected_topic ORDER BY Count DESC", conn)
     with colA:
-        st.bar_chart(df_trends.set_index("Topic"), color="#ff4b4b", height=400)
+        st.bar_chart(df_trends.set_index("Topic"), color="#9b51e0", height=400)
     with colB:
         st.write("**Top Performing Topics**")
         st.dataframe(df_trends, hide_index=True)
@@ -98,19 +97,19 @@ with tab3:
             with st.spinner(f"Analyzing gap strategies with {provider}..."):
                 try:
                     st.success("Drafts successfully generated!")
-                    st.write(generate_ideas("Salon in Kharghar", past_topics, num_drafts, provider.split()[0].lower()))
+                    st.write(generate_ideas("10-minute grocery delivery", past_topics, num_drafts, provider.split()[0].lower()))
                     conn.execute("INSERT INTO generated_ideas (topic, content) VALUES (?, ?)", (f"Generated Topic", "Sample"))
                     conn.commit()
                 except Exception:
                     st.markdown("""
-                    **Draft 1: The Weekend Refresh**
-                    * **Topic:** Weekend Self-Care
-                    * **Copy:** "Long week? Treat yourself to our signature relaxing hair spa and blowout. Walk-ins welcome all weekend!"
-                    * **CTA:** Call to Book
+                    **Draft 1: The Morning Rush**
+                    * **Topic:** Breakfast Essentials
+                    * **Copy:** "Out of milk? Don't skip breakfast. Get fresh milk, eggs, and bread delivered in 10 minutes."
+                    * **CTA:** Order Now
                     
-                    **Draft 2: Pre-Festive Makeover**
-                    * **Topic:** Pre-Festival Prep
-                    * **Copy:** "Beat the festive rush! Book your color and keratin sessions early and get 15% off your total bill."
+                    **Draft 2: Movie Night Sorted**
+                    * **Topic:** Weekend Snacks
+                    * **Copy:** "Movie starting? Get popcorn, nachos, and cold drinks delivered before the opening credits roll."
                     * **CTA:** Claim Offer
                     """)
 
